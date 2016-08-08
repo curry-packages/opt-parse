@@ -1,0 +1,14 @@
+{
+  "name": "opt-parse",
+  "version": "0.0.1",
+  "author": "Jonas Oberschweiber <jonas@oberschweiber.com>",
+  "synopsis": "An option parser for Curry",
+  "dependencies": {
+    "opt-parse": ">= 0.0.1",
+    "boxes": ">= 0.0.1"
+  },
+  "source": {
+    "git": "ssh://git@git.ps.informatik.uni-kiel.de:55055/joo/opt-parse.git",
+    "tag": "$version"
+  }
+}
