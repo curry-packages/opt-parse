@@ -14,6 +14,7 @@ data Arg = Flag String
 data Parser a = OptP ArgProps OptProps (String -> a)
               | FlagP ArgProps OptProps a
               | ArgP ArgProps (String -> a)
+              | RestP ArgProps (String -> a)
               | CmdP ArgProps [(String, ArgProps, a, ParseSpec a)]
 
 data ParseSpec a = ParseSpec [Parser a]
@@ -63,6 +64,9 @@ strOption f (Mod o a) = [OptP (a defaultArgProps) (o defaultOptProps) f]
 
 arg :: (String -> a) -> Mod -> [Parser a]
 arg f (Mod _ a) = [ArgP (a defaultArgProps) f]
+
+rest :: (String -> a) -> Mod -> [Parser a]
+rest f (Mod _ a) = [RestP (a defaultArgProps) f]
 
 flag :: a -> Mod -> [Parser a]
 flag f (Mod o a) = [FlagP (a defaultArgProps) (o defaultOptProps) f]
@@ -131,6 +135,11 @@ argRow (ArgP a _) = [metavarName a, help]
   help = case helpText a of
     Nothing -> ""
     Just  h -> h 
+argRow (RestP a _) = [metavarName a, help]
+ where
+  help = case helpText a of
+    Nothing -> ""
+    Just  h -> h 
 
 cmdsRows :: Int -> Int -> Parser a -> B.Box
 cmdsRows max w (CmdP a cmds) = B.text ("Options for " ++ (metavarName a)) B.// B.table (map cmdRow cmds) [max + 5, w - max - 5]
@@ -168,6 +177,12 @@ parse argv spec prog = case P.parse pArgs argv of
   Nothing -> Left $ parseError prog spec "Couldn't parse command line!"
   Just as -> parseArgs as spec prog
 
+extractStrings :: [Arg] -> String
+extractStrings [] = []
+extractStrings ((Val s):as) = s ++ " " ++ (extractStrings as)
+extractStrings ((FlagWithValue n v):as) = "--" ++ n ++ "=" ++ v ++ " " ++ (extractStrings as)
+extractStrings ((Flag n):as) = "-" ++ n ++ " " ++ (extractStrings as)
+
 parseArgs :: [Arg] -> ParseSpec a -> String -> Either String [a]
 parseArgs args sp@(ParseSpec specs) prog = parse' args rest []
  where
@@ -175,6 +190,7 @@ parseArgs args sp@(ParseSpec specs) prog = parse' args rest []
   rest = filter (not . isOpt) specs
   parse' ((Val s):as) (p:ps) xs = case p of
     ArgP _ f -> parse' as ps ((f s):xs)
+    RestP _ f -> parse' [] (p:ps) ((f $ extractStrings ((Val s):as)):xs)
     CmdP _ cmds -> case findCommand s cmds of
       Nothing -> Left $ parseError prog sp $ "Unknown command '" ++ s ++ "'."
       Just (cmd, _, d, spec) -> case parseArgs as spec (prog ++ " " ++ cmd) of
@@ -217,6 +233,7 @@ optMatches n (FlagP _ o _) = n == (longName o) || n == (shortName o)
 isOptional (OptP a _ _) = argOptional a
 isOptional (FlagP a _ _) = argOptional a
 isOptional (ArgP a _) = argOptional a
+isOptional (RestP a _) = argOptional a
 isOptional (CmdP a _) = argOptional a
 
 findCommand :: String -> [(String, ArgProps, a, ParseSpec a)] -> Maybe (String, ArgProps, a, ParseSpec a)
@@ -230,18 +247,21 @@ findCommand s cmds = case cmd of
 isOpt :: Parser a -> Bool
 isOpt (OptP _ _ _) = True
 isOpt (ArgP _ _) = False
+isOpt (RestP _ _) = False
 isOpt (CmdP _ _) = False
 isOpt (FlagP _ _ _) = True
 
 isArg :: Parser a -> Bool
 isArg (OptP _ _ _) = False
 isArg (ArgP _ _) = True
+isArg (RestP _ _) = True
 isArg (CmdP _ _) = False
 isArg (FlagP _ _ _) = False
 
 isCmd :: Parser a -> Bool
 isCmd (OptP _ _ _) = False
 isCmd (ArgP _ _) = False
+isCmd (RestP _ _) = False
 isCmd (CmdP _ _) = True
 isCmd (FlagP _ _ _) = False
 
