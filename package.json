@@ -4,7 +4,7 @@
   "author": "Jonas Oberschweiber <jonas@oberschweiber.com>",
   "synopsis": "An option parser for Curry",
   "dependencies": {
-    "opt-parse": ">= 0.0.1",
+    "det-parse": ">= 0.0.1",
     "boxes": ">= 0.0.1"
   },
   "source": {

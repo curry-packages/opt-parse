@@ -32,6 +32,13 @@ data Mod = Mod
   { optMod :: OptProps -> OptProps
   , argMod :: ArgProps -> ArgProps }
 
+argProps :: Parser a -> ArgProps
+argProps (OptP a _ _) = a
+argProps (FlagP a _ _) = a
+argProps (ArgP a _) = a
+argProps (RestP a _) = a
+argProps (CmdP a _) = a
+
 idm :: Mod
 idm = Mod id id
 
@@ -86,6 +93,9 @@ argParse = ParseSpec
 commands :: Mod -> [(String, ArgProps, a, ParseSpec a)] -> [Parser a]
 commands (Mod _ a) cmds = [CmdP (a defaultArgProps) cmds]
 
+margin :: Int
+margin = 5
+
 printUsage :: String -> Int -> ParseSpec a -> IO ()
 printUsage prog w spec = B.printBox $ usageBox prog w spec
 
@@ -98,11 +108,14 @@ usageBox prog w (ParseSpec ps) = usageLine B./+/ optBox B./+/ argBox B./+/ cmdsB
   opts = filter isOpt ps
   args = filter isArg ps
   cmds = filter isCmd ps
-  usageLine = B.text prog B.<+> (B.text $ intercalate " " $ map formatArgForUsage (filter (not . isOpt) ps))
+  formattedArgs = map formatArgForUsage $ filter (not . isOpt) ps
+  usageLine = B.text prog B.<+> (B.text $ intercalate " " $ formattedArgs)
   maxOptLen = foldl max 0 $ map optLen opts
-  optBox = B.table (map optRow opts) [maxOptLen + 5, w - maxOptLen - 5]
+  optBox = B.table (map optRow opts) [
+    maxOptLen + margin, w - maxOptLen - margin]
   maxArgLen = foldl max 0 $ map posnLen args
-  argBox = B.table (map argRow args) [maxArgLen + 5, w - maxArgLen - 5]
+  argBox = B.table (map argRow args) [
+    maxArgLen + margin, w - maxArgLen - margin]
   maxCmdsLen = foldl max 0 $ map cmdsLen cmds
   cmdsBox = B.vcat B.left $ (map (cmdsRows maxCmdsLen w) cmds) 
 
@@ -110,67 +123,82 @@ formatArgForUsage :: Parser a -> String
 formatArgForUsage p = wrap $ metavarN p
  where
   wrap s = if isOptional p then "[" ++ s ++ "]" else s
-  metavarN (ArgP a _) = metavarName a
-  metavarN (CmdP a _) = metavarName a
+  metavarN = metavarName . argProps
 
 optRow :: Parser a -> [String]
-optRow (OptP a o _) = [short ++ " " ++ long ++ " " ++ metavarName a, help]
+optRow (OptP a o _) = [sh ++ " " ++ lo ++ " " ++ metavarName a, hlp]
  where 
-  short = "-" ++ (shortName o) ++ (if longName o /= "" then "," else "")
-  long = "--" ++ (longName o)
-  help = case helpText a of 
+  sh = "-" ++ (shortName o) ++ (if longName o /= "" then "," else "")
+  lo = "--" ++ (longName o)
+  hlp = case helpText a of 
     Nothing -> ""
     Just h  -> h
-optRow (FlagP a o _) = [short ++ " " ++ long ++ " " ++ metavarName a, help]
+optRow (FlagP a o _) = [sh ++ " " ++ lo ++ " " ++ metavarName a, hlp]
  where 
-  short = "-" ++ (shortName o) ++ (if longName o /= "" then "," else "")
-  long = "--" ++ (longName o)
-  help = case helpText a of 
+  sh = "-" ++ (shortName o) ++ (if longName o /= "" then "," else "")
+  lo = "--" ++ (longName o)
+  hlp = case helpText a of 
     Nothing -> ""
     Just h  -> h
+optRow (ArgP _ _)  = error "OptParse.optRow: called on ArgP"
+optRow (RestP _ _) = error "OptParse.optRow: called on RestP"
+optRow (CmdP _ _)  = error "OptParse.optRow: called on CmdP"
 
 argRow :: Parser a -> [String]
-argRow (ArgP a _) = [metavarName a, help]
+argRow (ArgP a _) = [metavarName a, hlp]
  where
-  help = case helpText a of
+  hlp = case helpText a of
     Nothing -> ""
     Just  h -> h 
-argRow (RestP a _) = [metavarName a, help]
+argRow (RestP a _) = [metavarName a, hlp]
  where
-  help = case helpText a of
+  hlp = case helpText a of
     Nothing -> ""
     Just  h -> h 
+argRow (OptP _ _ _)  = error "OptParse.argRow: called on OptP"
+argRow (FlagP _ _ _) = error "OptParse.argRow: called on FlagP"
+argRow (CmdP _ _)    = error "OptParse.argRow: called on CmdP"
 
 cmdsRows :: Int -> Int -> Parser a -> B.Box
-cmdsRows max w (CmdP a cmds) = B.text ("Options for " ++ (metavarName a)) B.// B.table (map cmdRow cmds) [max + 5, w - max - 5]
+cmdsRows max w (CmdP a cmds) = hdr B.// tbl
  where
-  cmdRow (n, a, _, _) = [n, getHelp a]
-  getHelp a = case helpText a of
+  hdr = B.text $ "Options for " ++ (metavarName a)
+  tbl = B.table (map cmdRow cmds) [max + margin, w - max - margin]
+  cmdRow (n, x, _, _) = [n, getHelp x]
+  getHelp x = case helpText x of
     Nothing -> ""
     Just  h -> h
+cmdsRows _ _ (OptP _ _ _)  = error "OptParse.cmdsRows: called on OptP"
+cmdsRows _ _ (FlagP _ _ _) = error "OptParse.cmdsRows: called on FlagP"
+cmdsRows _ _ (ArgP _ _)    = error "OptParse.cmdsRows: called on ArgP"
+cmdsRows _ _ (RestP _ _)   = error "OptParse.cmdsRows: called on RestP"
 
 cmdsLen :: Parser a -> Int
-cmdsLen (CmdP a cmds) = foldl max 0 $ map cmdsLen' cmds
+cmdsLen (CmdP _ cmds) = foldl max 0 $ map cmdsLen' cmds
  where
   cmdsLen' (n, _, _, _) = length n
-cmdsLen (ArgP _ _) = 0
-cmdsLen (OptP _ _ _) = 0
+cmdsLen (ArgP _ _)    = 0
+cmdsLen (OptP _ _ _)  = 0
 cmdsLen (FlagP _ _ _) = 0
+cmdsLen (RestP _ _)   = 0
 
 posnLen :: Parser a -> Int
-posnLen (ArgP a _) = length (metavarName a)
-posnLen (CmdP _ _) = 0
-posnLen (OptP _ _ _) = 0
+posnLen (ArgP a _)    = length (metavarName a)
+posnLen (CmdP _ _)    = 0
+posnLen (OptP _ _ _)  = 0
 posnLen (FlagP _ _ _) = 0
+posnLen (RestP _ _)   = 0
 
 optLen' :: ArgProps -> OptProps -> Int
-optLen' a o = length (shortName o) + 2 + length (longName o) + 3 + length (metavarName a) + 2
+optLen' a o = length (shortName o) + 2 + length (longName o) + 3 + 
+  length (metavarName a) + 2
 
 optLen :: Parser a -> Int
-optLen (OptP a o _) = optLen' a o
+optLen (OptP a o _)  = optLen' a o
 optLen (FlagP a o _) = optLen' a o
-optLen (ArgP _ _) = 0
-optLen (CmdP _ _) = 0
+optLen (ArgP _ _)    = 0
+optLen (CmdP _ _)    = 0
+optLen (RestP _ _)   = 0 
 
 parse :: String -> ParseSpec a -> String -> Either String [a]
 parse argv spec prog = case P.parse pArgs argv of
@@ -180,61 +208,65 @@ parse argv spec prog = case P.parse pArgs argv of
 extractStrings :: [Arg] -> String
 extractStrings [] = []
 extractStrings ((Val s):as) = s ++ " " ++ (extractStrings as)
-extractStrings ((FlagWithValue n v):as) = "--" ++ n ++ "=" ++ v ++ " " ++ (extractStrings as)
+extractStrings ((FlagWithValue n v):as) = 
+  "--" ++ n ++ "=" ++ v ++ " " ++ (extractStrings as)
 extractStrings ((Flag n):as) = "-" ++ n ++ " " ++ (extractStrings as)
 
 parseArgs :: [Arg] -> ParseSpec a -> String -> Either String [a]
-parseArgs args sp@(ParseSpec specs) prog = parse' args rest []
+parseArgs args sp@(ParseSpec specs) prog = parse' args rst []
  where
   opts = filter isOpt specs
-  rest = filter (not . isOpt) specs
+  rst = filter (not . isOpt) specs
   parse' ((Val s):as) (p:ps) xs = case p of
-    ArgP _ f -> parse' as ps ((f s):xs)
-    RestP _ f -> parse' [] (p:ps) ((f $ extractStrings ((Val s):as)):xs)
+    ArgP _ f    -> parse' as ps ((f s):xs)
+    RestP _ f   -> parse' [] (p:ps) ((f $ extractStrings ((Val s):as)):xs)
     CmdP _ cmds -> case findCommand s cmds of
       Nothing -> Left $ parseError prog sp $ "Unknown command '" ++ s ++ "'."
       Just (cmd, _, d, spec) -> case parseArgs as spec (prog ++ " " ++ cmd) of
         Left e -> Left e
         Right xs' -> Right $ xs ++ [d] ++ xs'
-    OptP _ _ _ -> error "OptP in list of positional candidates"
+    OptP _ _ _  -> error "OptP in list of positional candidates"
     FlagP _ _ _ -> error "FlagP in list of positional candidates"
   parse' ((FlagWithValue n v):as) ps xs = case filter (optMatches n) opts of
     [] -> Left $ parseError prog sp $ "Unknown option '" ++ n ++ "'."
-    ((OptP _ _ f):_) -> parse' as ps ((f v):xs)
+    ((OptP _ _ f):_)  -> parse' as ps ((f v):xs)
+    ((ArgP _ _):_)    -> error $ "OptParse.parseArgs: ArgP matches opt " ++ n
+    ((FlagP _ _ _):_) -> error $ "OptParse.parseArgs: FlagP matches opt " ++ n
+    ((RestP _ _):_)   -> error $ "OptParse.parseArgs: RestP matches opt " ++ n
+    ((CmdP _ _):_)    -> error $ "OptParse.parseArgs: CmdP matches opt " ++ n
   parse' ((Flag n):as) ps xs = if n == "h" || n == "help"
     then Left $ parseError prog sp ""
     else case filter (optMatches n) opts of
       [] -> Left $ parseError prog sp $ "Unknown option '" ++ n ++ "'."
-      ((OptP _ _ f):_) -> case as of
-        ((Val v):as') -> parse' as' ps ((f v):xs)
+      ((OptP _ _ f):_)  -> case as of
+        ((Val v):as')   -> parse' as' ps ((f v):xs)
         _           -> Left $ parseError prog sp $ "Option '" ++ n ++ "' expects a value."
       ((FlagP _ _ f):_) -> parse' as ps (f:xs)
-  parse' ((Val s):as) []    xs = parse' as [] xs
+      ((ArgP _ _):_)    -> error $ "OptParse.parseArgs: ArgP matches flag " ++ n
+      ((RestP _ _):_)   -> error $ "OptParse.parseArgs: RestP matches flag " ++ n
+      ((CmdP _ _):_)    -> error $ "OptParse.parseArgs: CmdP matches flag " ++ n
+  parse' ((Val _):as) []    xs = parse' as [] xs
   parse' []           (p:ps) xs = if isOptional p
     then parse' [] ps xs
-    else Left $ parseError prog sp $ "Expected " ++ (argMetavar p) ++ ", but there are no arguments left."
+    else Left $ parseError prog sp $ 
+      "Expected " ++ (argMetavar p) ++ ", but there are no arguments left."
   parse' []           []    xs = Right xs
 
 parseError :: String -> ParseSpec a -> String -> String
 parseError prog spec err = renderUsage prog 80 spec ++ "\n" ++ err
 
 argMetavar :: Parser a -> String
-argMetavar (OptP a _ _) = metavarName a
-argMetavar (FlagP a _ _) = metavarName a
-argMetavar (ArgP a _) = metavarName a
-argMetavar (CmdP a _) = metavarName a
+argMetavar = metavarName . argProps
 
 optMatches :: String -> Parser a -> Bool
-optMatches _ (ArgP _ _) = False
-optMatches _ (CmdP _ _) = False
-optMatches n (OptP _ o _) = n == (longName o) || n == (shortName o)
+optMatches _ (ArgP _ _)    = False
+optMatches _ (CmdP _ _)    = False
+optMatches _ (RestP _ _)   = False
+optMatches n (OptP _ o _)  = n == (longName o) || n == (shortName o)
 optMatches n (FlagP _ o _) = n == (longName o) || n == (shortName o)
 
-isOptional (OptP a _ _) = argOptional a
-isOptional (FlagP a _ _) = argOptional a
-isOptional (ArgP a _) = argOptional a
-isOptional (RestP a _) = argOptional a
-isOptional (CmdP a _) = argOptional a
+isOptional :: Parser a -> Bool
+isOptional = argOptional . argProps
 
 findCommand :: String -> [(String, ArgProps, a, ParseSpec a)] -> Maybe (String, ArgProps, a, ParseSpec a)
 findCommand s cmds = case cmd of
@@ -277,10 +309,13 @@ pArg = Flag P.<$> pFlagNoValue
   P.<|> Val P.<$> P.some pNonWhitespace
 
 pFlagValue :: P.Parser Arg
-pFlagValue = FlagWithValue P.<$> (P.char '-' P.*> P.char '-' P.*> P.some pNonWhitespace) P.<*> (P.char '=' P.*> P.some pNonWhitespace)
+pFlagValue = FlagWithValue 
+  P.<$> (P.char '-' P.*> P.char '-' P.*> P.some pNonWhitespace) 
+  P.<*> (P.char '=' P.*> P.some pNonWhitespace)
 
 pFlagNoValue :: P.Parser String
-pFlagNoValue = P.char '-' P.*> ((P.char '-' P.*> P.some pNonWhiteEqual) P.<|> pAsciiNonWhitespace)
+pFlagNoValue = P.char '-' 
+  P.*> ((P.char '-' P.*> P.some pNonWhiteEqual) P.<|> pAsciiNonWhitespace)
 
 pNonWhiteEqual :: P.Parser Char
 pNonWhiteEqual = P.check f P.anyChar
