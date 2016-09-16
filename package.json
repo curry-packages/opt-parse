@@ -1,6 +1,6 @@
 {
   "name": "opt-parse",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "author": "Jonas Oberschweiber <jonas@oberschweiber.com>",
   "synopsis": "An option parser for Curry",
   "dependencies": {
