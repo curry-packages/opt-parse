@@ -8,7 +8,7 @@
     "boxes": ">= 0.0.1"
   },
   "source": {
-    "git": "ssh://git@git.ps.informatik.uni-kiel.de:55055/joo/opt-parse.git",
+    "git": "https://git.ps.informatik.uni-kiel.de/curry-packages/opt-parse.git",
     "tag": "$version"
   }
 }
