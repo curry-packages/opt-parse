@@ -2,6 +2,7 @@
   "name": "opt-parse",
   "version": "0.0.3",
   "author": "Jonas Oberschweiber <jonas@oberschweiber.com>",
+  "category": [ "Parsing" ],
   "synopsis": "An option parser for Curry",
   "dependencies": {
     "det-parse": ">= 0.0.1",
