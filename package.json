@@ -1,15 +1,19 @@
 {
-  "name": "opt-parse",
-  "version": "0.0.3",
-  "author": "Jonas Oberschweiber <jonas@oberschweiber.com>",
-  "category": [ "Parsing" ],
-  "synopsis": "An option parser for Curry",
-  "dependencies": {
-    "det-parse": ">= 0.0.1",
-    "boxes": ">= 0.0.1"
-  },
-  "source": {
-    "git": "https://git.ps.informatik.uni-kiel.de/curry-packages/opt-parse.git",
-    "tag": "$version"
-  }
+    "name": "opt-parse",
+    "version": "0.0.3",
+    "author": "Jonas Oberschweiber <jonas@oberschweiber.com>",
+    "category": [ "Parsing" ],
+    "synopsis": "An option parser for Curry",
+    "dependencies": {
+        "det-parse": ">= 0.0.1",
+        "boxes": ">= 0.0.1"
+    },
+    "compilerCompatibility": {
+        "pakcs": ">= 1.14.0, < 2.0.0",
+        "kics2": ">= 0.5.0, < 2.0.0"
+    },
+    "source": {
+        "git": "https://git.ps.informatik.uni-kiel.de/curry-packages/opt-parse.git",
+        "tag": "$version"
+    }
 }
