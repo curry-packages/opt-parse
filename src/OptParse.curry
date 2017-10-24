@@ -321,7 +321,7 @@ renderCommandLine [] = []
 renderCommandLine ((Val s):as) = s ++ " " ++ (renderCommandLine as)
 renderCommandLine ((FlagWithValue n v):as) = 
   "--" ++ n ++ "=" ++ v ++ " " ++ (renderCommandLine as)
-renderCommandLine ((Flag n):as) = "-" ++ n ++ " " ++ (renderCommandLine as)
+renderCommandLine ((Flag n):as) = "--" ++ n ++ " " ++ (renderCommandLine as)
 
 --- Further parses a parsed command line using a parser spec.
 --- 
