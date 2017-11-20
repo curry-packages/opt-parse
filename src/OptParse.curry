@@ -29,7 +29,6 @@ import Debug
 import Char (isAscii)
 import List (intercalate)
 import qualified DetParse as P
-import Pretty
 import qualified Boxes as B
 
 --- A command line argument. Used to represent a parsed command line.
