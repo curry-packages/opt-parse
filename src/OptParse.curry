@@ -1,4 +1,4 @@
-module OptParse 
+module OptParse
   ( Arg
   , Parser
   , ParseSpec
@@ -25,14 +25,14 @@ module OptParse
   , parse
   ) where
 
-import Debug
-import Char (isAscii)
-import List (intercalate)
+import Debug.Trace
+import Data.Char (isAscii)
+import Data.List (intercalate)
 import qualified DetParse as P
 import qualified Boxes as B
 
 --- A command line argument. Used to represent a parsed command line.
---- 
+---
 --- @cons Flag - a flag, e.g. `-d` or `--enable-debug`
 --- @cons Val - a simple value
 --- @cons FlagWithValue - an option, e.g. `-v debug` or `--verbosity=debug`
@@ -40,7 +40,7 @@ data Arg = Flag String
          | Val  String
          | FlagWithValue String String
 
---- A partial command line parser. 
+--- A partial command line parser.
 ---
 --- @cons OptP - parses an option with a value
 --- @cons FlagP - parses a flag
@@ -59,7 +59,7 @@ data ParseSpec a = ParseSpec [Parser a]
 --- Properties that for all parser types.
 data ArgProps = ArgProps
   { metavarName :: String
-  , helpText :: Maybe String 
+  , helpText :: Maybe String
   , argOptional :: Bool }
 
 --- Properties for option/flag parsers.
@@ -68,7 +68,7 @@ data OptProps = OptProps
   , shortName :: String }
 
 --- Modifiers for argument and option properties.
-data Mod = Mod 
+data Mod = Mod
   { optMod :: OptProps -> OptProps
   , argMod :: ArgProps -> ArgProps }
 
@@ -104,7 +104,7 @@ short s = Mod (\o -> o { shortName = s }) id
 optional :: Mod
 optional = Mod id (\a -> a { argOptional = True })
 
---- Set the metavar of an argument. The metavar is used to print usage 
+--- Set the metavar of an argument. The metavar is used to print usage
 --- information.
 metavar :: String -> Mod
 metavar s = Mod id (\a -> a { metavarName = s })
@@ -157,7 +157,7 @@ infixl 5 <|>
 (<|>) = (++)
 
 --- Create a sub-parser for a command. Must be used with `commands`.
---- 
+---
 --- @param n the name of the command
 --- @param m modifiers for this command
 --- @param a the result of this parse
@@ -180,7 +180,7 @@ margin :: Int
 margin = 5
 
 --- Print usage information for a command line parser specification.
---- 
+---
 --- @param p the name of the current program
 --- @param c the maximum number of columns to use
 --- @param p the parser specification
@@ -215,7 +215,7 @@ usageBox prog w (ParseSpec ps) = usageLine B./+/ optBox B./+/ argBox B./+/ cmdsB
   argBox = B.table (map argRow args) [
     maxArgLen + margin, w - maxArgLen - margin]
   maxCmdsLen = foldl max 0 $ map cmdsLen cmds
-  cmdsBox = B.vcat B.left $ (map (cmdsRows maxCmdsLen w) cmds) 
+  cmdsBox = B.vcat B.left $ (map (cmdsRows maxCmdsLen w) cmds)
 
 --- Render an argument for the usage line.
 formatArgForUsage :: Parser a -> String
@@ -226,17 +226,17 @@ formatArgForUsage p = wrap $ argMetavar p
 --- Render detailed help for an option/flag.
 optRow :: Parser a -> [String]
 optRow (OptP a o _) = [sh ++ " " ++ lo ++ " " ++ metavarName a, hlp]
- where 
+ where
   sh = "-" ++ (shortName o) ++ (if longName o /= "" then "," else "")
   lo = "--" ++ (longName o)
-  hlp = case helpText a of 
+  hlp = case helpText a of
     Nothing -> ""
     Just h  -> h
 optRow (FlagP a o _) = [sh ++ " " ++ lo ++ " " ++ metavarName a, hlp]
- where 
+ where
   sh = "-" ++ (shortName o) ++ (if longName o /= "" then "," else "")
   lo = "--" ++ (longName o)
-  hlp = case helpText a of 
+  hlp = case helpText a of
     Nothing -> ""
     Just h  -> h
 optRow (ArgP _ _)  = error "OptParse.optRow: called on ArgP"
@@ -249,12 +249,12 @@ argRow (ArgP a _) = [metavarName a, hlp]
  where
   hlp = case helpText a of
     Nothing -> ""
-    Just  h -> h 
+    Just  h -> h
 argRow (RestP a _) = [metavarName a, hlp]
  where
   hlp = case helpText a of
     Nothing -> ""
-    Just  h -> h 
+    Just  h -> h
 argRow (OptP _ _ _)  = error "OptParse.argRow: called on OptP"
 argRow (FlagP _ _ _) = error "OptParse.argRow: called on FlagP"
 argRow (CmdP _ _)    = error "OptParse.argRow: called on CmdP"
@@ -293,7 +293,7 @@ posnLen (FlagP _ _ _) = 0
 posnLen (RestP _ _)   = 0
 
 optLen' :: ArgProps -> OptProps -> Int
-optLen' a o = length (shortName o) + 2 + length (longName o) + 3 + 
+optLen' a o = length (shortName o) + 2 + length (longName o) + 3 +
   length (metavarName a) + 2
 
 --- Length needed to represent a option/flag detailed help.
@@ -302,10 +302,10 @@ optLen (OptP a o _)  = optLen' a o
 optLen (FlagP a o _) = optLen' a o
 optLen (ArgP _ _)    = 0
 optLen (CmdP _ _)    = 0
-optLen (RestP _ _)   = 0 
+optLen (RestP _ _)   = 0
 
 --- Parses a command line via a parser spec.
---- 
+---
 --- @param l the command line
 --- @param s the parser spec
 --- @param p the name of the current program
@@ -318,12 +318,12 @@ parse argv spec prog = case P.parse pArgs argv of
 renderCommandLine :: [Arg] -> String
 renderCommandLine [] = []
 renderCommandLine ((Val s):as) = s ++ " " ++ (renderCommandLine as)
-renderCommandLine ((FlagWithValue n v):as) = 
+renderCommandLine ((FlagWithValue n v):as) =
   "--" ++ n ++ "=" ++ v ++ " " ++ (renderCommandLine as)
 renderCommandLine ((Flag n):as) = "--" ++ n ++ " " ++ (renderCommandLine as)
 
 --- Further parses a parsed command line using a parser spec.
---- 
+---
 --- @param as parsed command line
 --- @param s parser spec
 --- @param p name of the current program
@@ -363,12 +363,12 @@ parseArgs args sp@(ParseSpec specs) prog = parse' args rst []
   parse' ((Val _):as) []    xs = parse' as [] xs
   parse' []           (p:ps) xs = if isOptional p
     then parse' [] ps xs
-    else Left $ parseError prog sp $ 
+    else Left $ parseError prog sp $
       "Expected " ++ (argMetavar p) ++ ", but there are no arguments left."
   parse' []           []    xs = Right xs
 
 --- Renders a parse error.
---- 
+---
 --- @param p name of the current program
 --- @param s parser spec
 --- @param e error that occured
@@ -433,12 +433,12 @@ pArg = Flag P.<$> pFlagNoValue
   P.<|> Val P.<$> P.some pNonWhitespace
 
 pFlagValue :: P.Parser Arg
-pFlagValue = FlagWithValue 
-  P.<$> (P.char '-' P.*> P.char '-' P.*> P.some pNonWhitespace) 
+pFlagValue = FlagWithValue
+  P.<$> (P.char '-' P.*> P.char '-' P.*> P.some pNonWhitespace)
   P.<*> (P.char '=' P.*> P.some pNonWhitespace)
 
 pFlagNoValue :: P.Parser String
-pFlagNoValue = P.char '-' 
+pFlagNoValue = P.char '-'
   P.*> ((P.char '-' P.*> P.some pNonWhiteEqual) P.<|> pAsciiNonWhitespace)
 
 pNonWhiteEqual :: P.Parser Char
