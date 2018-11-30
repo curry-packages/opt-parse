@@ -6,7 +6,7 @@
     "synopsis": "An option parser for Curry",
     "dependencies": {
         "det-parse": ">= 2.0.0",
-        "boxes"    : ">= 2.0.0",
+        "boxes"    : ">= 3.0.0",
         "base"     : ">= 2.0.0"
     },
     "compilerCompatibility": {
