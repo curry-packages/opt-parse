@@ -1,13 +1,13 @@
 {
     "name": "opt-parse",
-    "version": "2.0.0",
+    "version": "3.0.0",
     "author": "Jonas Oberschweiber <jonas@oberschweiber.com>",
     "category": [ "Parsing" ],
     "synopsis": "An option parser for Curry",
     "dependencies": {
-        "det-parse": ">= 2.0.0",
-        "boxes"    : ">= 3.0.0",
-        "base"     : ">= 2.0.0"
+        "det-parse": ">= 3.0.0, < 4.0.0",
+        "boxes"    : ">= 3.0.0, < 4.0.0",
+        "base"     : ">= 3.0.0, < 4.0.0"
     },
     "compilerCompatibility": {
         "pakcs": ">= 2.0.0",
