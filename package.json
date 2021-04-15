@@ -9,10 +9,6 @@
         "boxes"    : ">= 3.0.0, < 4.0.0",
         "base"     : ">= 3.0.0, < 4.0.0"
     },
-    "compilerCompatibility": {
-        "pakcs": ">= 3.0.0, < 4.0.0",
-        "kics2": ">= 3.0.0, < 4.0.0"
-    },
     "exportedModules": [ "OptParse" ],
     "documentation": {
         "src-dir": ".",
