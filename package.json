@@ -10,6 +10,8 @@
         "det-parse": ">= 3.0.0, < 4.0.0"
     },
     "exportedModules": [ "OptParse" ],
+    "license": "BSD-3-Clause",
+    "licenseFile": "LICENSE",
     "documentation": {
         "src-dir": ".",
         "main": "README.md"
