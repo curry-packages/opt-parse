@@ -5,9 +5,9 @@
     "category": [ "Parsing" ],
     "synopsis": "An option parser for Curry",
     "dependencies": {
-        "det-parse": ">= 3.0.0, < 4.0.0",
+        "base"     : ">= 3.0.0, < 4.0.0",
         "boxes"    : ">= 3.0.0, < 4.0.0",
-        "base"     : ">= 3.0.0, < 4.0.0"
+        "det-parse": ">= 3.0.0, < 4.0.0"
     },
     "exportedModules": [ "OptParse" ],
     "documentation": {
@@ -15,7 +15,7 @@
         "main": "README.md"
     },
     "source": {
-        "git": "https://git.ps.informatik.uni-kiel.de/curry-packages/opt-parse.git",
+        "git": "https://github.com/curry-packages/opt-parse.git",
         "tag": "$version"
     }
 }
