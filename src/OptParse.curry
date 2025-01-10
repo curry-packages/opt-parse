@@ -311,7 +311,7 @@ optLen (RestP _ _)   = 0
 --- @param p the name of the current program
 parse :: String -> ParseSpec a -> String -> Either String [a]
 parse argv spec prog = case P.parse pArgs argv of
-  Nothing -> Left $ parseError prog spec "Couldn't parse command line!"
+  Nothing -> Left $ parseError prog spec "Could not parse command line!"
   Just as -> parseArgs as spec prog
 
 --- Renders parsed parts of a command line back to a string.
